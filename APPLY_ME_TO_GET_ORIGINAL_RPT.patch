@@ -1,13 +1,75 @@
-Subject: [PATCH] Disable 1. Asymmetric Transfer Plan, 2. Cascade Filter, and 3. Dynamic Pipeline, then we have the original RPT.
+Subject: [PATCH] Provide a code patch to restore the original RPT.
 ---
+Index: src/execution/operator/persistent/physical_create_bf.cpp
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/src/execution/operator/persistent/physical_create_bf.cpp b/src/execution/operator/persistent/physical_create_bf.cpp
+--- a/src/execution/operator/persistent/physical_create_bf.cpp	(revision bc06684670397d21a01122e132a5089bdafcc60f)
++++ b/src/execution/operator/persistent/physical_create_bf.cpp	(date 1757560836350)
+@@ -227,17 +227,17 @@
+ 			double row_length = static_cast<double>(gstate.total_row_size) / input_rows;
+ 			
+ 			// TODO: Currently, the number of threads affect the accuracy of progress percent.
+-			if (gstate.num_threads > 8) {
+-				if (selectivity > 0.35 || (row_length > 40 && selectivity > 0.2)) {
+-					is_successful = false;
+-					return true;
+-				}
+-			} else {
+-				if (progress_percent < 0.65 && (selectivity > 0.35 || (row_length > 40 && selectivity > 0.2))) {
+-					is_successful = false;
+-					return true;
+-				}
+-			}
++			// if (gstate.num_threads > 8) {
++			// 	if (selectivity > 0.35 || (row_length > 40 && selectivity > 0.2)) {
++			// 		is_successful = false;
++			// 		return true;
++			// 	}
++			// } else {
++			// 	if (progress_percent < 0.65 && (selectivity > 0.35 || (row_length > 40 && selectivity > 0.2))) {
++			// 		is_successful = false;
++			// 		return true;
++			// 	}
++			// }
+ 
+ 			// 2. Estimate the lower bound of required memory, which is used to materialize this table. If it is very
+ 			// large, give up creating BF.
+Index: src/execution/transfer_bf_linker.cpp
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/src/execution/transfer_bf_linker.cpp b/src/execution/transfer_bf_linker.cpp
+--- a/src/execution/transfer_bf_linker.cpp	(revision bc06684670397d21a01122e132a5089bdafcc60f)
++++ b/src/execution/transfer_bf_linker.cpp	(date 1757560836354)
+@@ -19,11 +19,11 @@
+ 	state = State::CLEAN_USELESS_OPERATORS;
+ 	VisitOperator(op);
+ 
+-	state = State::UPDATE_MIN_MAX_BINDING;
+-	VisitOperator(op);
+-
+-	state = State::SMOOTH_MARK_JOIN;
+-	VisitOperator(op);
++	// state = State::UPDATE_MIN_MAX_BINDING;
++	// VisitOperator(op);
++	//
++	// state = State::SMOOTH_MARK_JOIN;
++	// VisitOperator(op);
+ }
+ 
+ void TransferBFLinker::VisitOperator(LogicalOperator &op) {
 Index: src/optimizer/predicate_transfer/transfer_graph_manager.cpp
 IDEA additional info:
 Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
 <+>UTF-8
 ===================================================================
 diff --git a/src/optimizer/predicate_transfer/transfer_graph_manager.cpp b/src/optimizer/predicate_transfer/transfer_graph_manager.cpp
---- a/src/optimizer/predicate_transfer/transfer_graph_manager.cpp	(revision 7b3cdf94ab88e01bd03c1190c93c910651063686)
-+++ b/src/optimizer/predicate_transfer/transfer_graph_manager.cpp	(date 1757558766802)
+--- a/src/optimizer/predicate_transfer/transfer_graph_manager.cpp	(revision bc06684670397d21a01122e132a5089bdafcc60f)
++++ b/src/optimizer/predicate_transfer/transfer_graph_manager.cpp	(date 1757560836358)
 @@ -61,10 +61,11 @@
  	}
  
