@@ -27,7 +27,7 @@
 namespace duckdb {
 
 static constexpr const uint32_t MAX_NUM_SECTORS = (1ULL << 26);
-static constexpr const uint32_t MIN_NUM_BITS_PER_KEY = 20;
+static constexpr const uint32_t MIN_NUM_BITS_PER_KEY = 16;
 static constexpr const uint32_t MIN_NUM_BITS = 512;
 static constexpr const uint32_t LOG_SECTOR_SIZE = 5;
 static constexpr const int32_t SIMD_BATCH_SIZE = 16;
@@ -45,6 +45,31 @@ public:
 public:
 	int Lookup(DataChunk &chunk, vector<uint32_t> &results, const vector<idx_t> &bound_cols_applied) const;
 	void Insert(DataChunk &chunk, const vector<idx_t> &bound_cols_built);
+
+	uint64_t Fingerprint() const {
+		// FNV-1a 64-bit hash
+		constexpr uint64_t kOffset = 14695981039346656037ull;
+		constexpr uint64_t kPrime  = 1099511628211ull;
+
+		uint64_t h = kOffset;
+
+		// Mix in metadata to avoid collisions between Bloom filters of different sizes
+		h ^= static_cast<uint64_t>(num_sectors);
+		h *= kPrime;
+
+		// Iterate over all 32-bit blocks
+		// Note: read as plain uint32_t; make sure there are no concurrent writes.
+		for (uint32_t i = 0; i < num_sectors; ++i) {
+			uint64_t w = static_cast<uint64_t>(blocks[i]);
+			h ^= w;
+			h *= kPrime;
+
+			// Mix in the index as well, to reduce collision chances on uniform data
+			h ^= static_cast<uint64_t>(i);
+			h *= kPrime;
+		}
+		return h;
+	}
 
 	uint32_t num_sectors;
 	uint32_t num_sectors_log;
@@ -81,11 +106,13 @@ private:
 		uint32_t mask2 = GetMask2(key_hi);
 
 		// Perform atomic OR operation on the bf array elements using std::atomic
-		std::atomic<uint32_t>& atomic_bf1 = *reinterpret_cast<std::atomic<uint32_t>*>(&bf[sector1]);
-		std::atomic<uint32_t>& atomic_bf2 = *reinterpret_cast<std::atomic<uint32_t>*>(&bf[sector2]);
+		// std::atomic<uint32_t>& atomic_bf1 = *reinterpret_cast<std::atomic<uint32_t>*>(&bf[sector1]);
+		// std::atomic<uint32_t>& atomic_bf2 = *reinterpret_cast<std::atomic<uint32_t>*>(&bf[sector2]);
 
-		atomic_bf1.fetch_or(mask1, std::memory_order_relaxed);
-		atomic_bf2.fetch_or(mask2, std::memory_order_relaxed);
+		// atomic_bf1.fetch_or(mask1, std::memory_order_relaxed);
+		// atomic_bf2.fetch_or(mask2, std::memory_order_relaxed);
+		bf[sector1] |= mask1;
+		bf[sector2] |= mask2;
 	}
 	inline bool LookupOne(uint32_t key_lo, uint32_t key_hi, const uint32_t *BF_RESTRICT bf) const {
 		uint32_t sector1 = GetSector1(key_lo, key_hi);
@@ -141,13 +168,18 @@ private:
 				mask2[j] = GetMask2(key_hi);
 			}
 
+			// In some cases, atomic operation leads to cache thrashing, making it slower than the locker.
+			// for (int j = 0; j < SIMD_BATCH_SIZE; j++) {
+			// 	// Atomic OR operation
+			// 	std::atomic<uint32_t>& atomic_bf1 = *reinterpret_cast<std::atomic<uint32_t>*>(&bf[block1[j]]);
+			// 	std::atomic<uint32_t>& atomic_bf2 = *reinterpret_cast<std::atomic<uint32_t>*>(&bf[block2[j]]);
+			//
+			// 	atomic_bf1.fetch_or(mask1[j], std::memory_order_relaxed);
+			// 	atomic_bf2.fetch_or(mask2[j], std::memory_order_relaxed);
+			// }
 			for (int j = 0; j < SIMD_BATCH_SIZE; j++) {
-				// Atomic OR operation
-				std::atomic<uint32_t>& atomic_bf1 = *reinterpret_cast<std::atomic<uint32_t>*>(&bf[block1[j]]);
-				std::atomic<uint32_t>& atomic_bf2 = *reinterpret_cast<std::atomic<uint32_t>*>(&bf[block2[j]]);
-
-				atomic_bf1.fetch_or(mask1[j], std::memory_order_relaxed);
-				atomic_bf2.fetch_or(mask2[j], std::memory_order_relaxed);
+				bf[block1[j]] |= mask1[j];
+				bf[block2[j]] |= mask2[j];
 			}
 		}
 
@@ -158,6 +190,7 @@ private:
 	}
 
 	AllocatedData buf_;
+	std::mutex mutex_;
 };
 
 class BloomFilterUsage {
