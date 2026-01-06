@@ -66,7 +66,6 @@ void BloomFilter::Insert(DataChunk &chunk, const vector<idx_t> &bound_cols_built
 	Vector hashes = HashColumns(chunk, bound_cols_built);
 
 #if USE_LOCK_BF
-	std::cerr << "Lock BF\t";
 	std::lock_guard<std::mutex> locker(mutex_);
 #endif
 
