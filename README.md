@@ -1,20 +1,46 @@
-This repository accompanies the accepted paper:
+## Dynamic Predicate Transfer (RPT+)
+
+This repository contains the implementation of **Dynamic Predicate Transfer (RPT+)**, built on top of [DuckDB v1.3.0](https://github.com/duckdb/duckdb/tree/v1.3-ossivalis). 
+
+Compared to the original Robust Predicate Transfer (RPT), RPT+ introduces several key optimizations. For technical details, please refer to the paper:
 
 > **Robust Predicate Transfer with Dynamic Execution** (PVLDB 2026, to appear) · Yiming Qiao, Peter Boncz, Huanchen Zhang [[Link]](https://yimingqiao.github.io/files/rpt_plus.pdf)
 
-## Dynamic Predicate Transfer
+## Quick Start
 
-This repository contains the implementation of **Dynamic Predicate Transfer (RPT+)**, built on top of [DuckDB v1.3.0](https://github.com/duckdb/duckdb/tree/v1.3-ossivalis). It provides a customized version of DuckDB. Compared to the original Robust Predicate Transfer (RPT), RPT+ introduces the following key improvements:
+Follow these steps to build RPT+ and run a demonstration of the multi-way join optimization.
 
-- **Asymmetric Transfer Plan** — replaces the LargestRoot algorithm for generating transfer plans.
-- **Cascade Filter** — combine min–max filters and Bloom filters to improve pruning effectiveness.
-- **Dynamic Pipeline strategy** — adapts filter creation and transfer decisions at runtime.
+### 1. Build & Launch
+Compile the project and start the DuckDB shell:
 
-If you want the **original RPT** on **DuckDB 1.3.0**, please apply the following patch: `APPLY_ME_TO_GET_ORIGINAL_RPT.patch`.
+```bash
+make release
+./build/release/duckdb
+```
 
-## Build
+### 2. Run Example
+Run the following SQL to set up data (5M rows) and perform a 3-way join. RPT+ will automatically transfer filters to optimize performance.
 
-You can build this repository in the same way as the original DuckDB. A `Makefile` wraps the build process. For available build targets and configuration flags, see the [DuckDB Build Configuration Guide](https://duckdb.org/docs/stable/dev/building/build_configuration.html).
+```sql
+-- 1. Setup Data
+CREATE TABLE A AS SELECT i AS id1, i AS id2 FROM range(1, 5000001) AS t(i);
+CREATE TABLE B AS SELECT i AS id1, i AS id2 FROM range(1, 5000001) AS t(i);
+CREATE TABLE C AS SELECT i AS id1, i AS id2 FROM range(1, 5000001) AS t(i);
+
+-- 2. Execute Query
+EXPLAIN ANALYZE        -- Show query execution plan
+SELECT count(*)
+FROM A JOIN B ON A.id1 = B.id1 JOIN C ON B.id1 = C.id1
+WHERE A.id2 % 5 = 0    -- Filter on A
+  AND B.id2 % 7 = 0    -- Filter on B
+  AND C.id2 % 13 = 0;  -- Filter on C
+```
+
+The query plan demonstrates a **chained forward transfer** (C → B → A) followed by a **backward broadcast** (A → B & C). 
+
+## Advanced Build Configuration
+
+RPT+ follows the same build process as DuckDB. For customized builds:
 
 ```bash
 make                   # Build optimized release version
@@ -24,10 +50,14 @@ GEN=ninja make         # Use Ninja as backend
 BUILD_BENCHMARK=1 make # Build with benchmark support
 ```
 
-## Baselines
+For more flags, see the [DuckDB Build Configuration Guide](https://duckdb.org/docs/stable/dev/building/build_configuration.html).
 
-- **RPT (Robust Predicate Transfer)**: [https://github.com/embryo-labs/Robust-Predicate-Transfer](https://github.com/embryo-labs/Robust-Predicate-Transfer)
-- **DuckDB v1.3.0**: [https://github.com/duckdb/duckdb/tree/v1.3-ossivalis](https://github.com/duckdb/duckdb/tree/v1.3-ossivalis)
+### Original RPT Support
+To use the **original RPT** implementation on DuckDB 1.3.0, apply the vanilla patch:
+
+```bash
+git apply APPLY_ME_TO_GET_VANILLA_RPT.patch
+```
 
 ## Benchmark
 
@@ -35,19 +65,19 @@ DuckDB includes a built-in implementation of benchmarks. You can build and run t
 
 ### TPC-H (SF=100)
 ```bash
-BUILD_BENCHMARK=1 BUILD_TPCH=1 BUILD_TPCDS=1 BUILD_HTTPFS=1 CORE_EXTENSIONS='tpch' make
+BUILD_BENCHMARK=1 BUILD_TPCH=1 BUILD_TPCDS=1 BUILD_HTTPFS=1 CORE_EXTENSIONS='tpch' make -j$(nproc)
 build/release/benchmark/benchmark_runner "benchmark/large/tpch-sf100/.*.benchmark" --threads=8
 ```
 
 ### Join Order Benchmark (JOB)
 ```bash
-BUILD_BENCHMARK=1 BUILD_TPCH=1 BUILD_TPCDS=1 BUILD_HTTPFS=1 CORE_EXTENSIONS='tpch' make
+BUILD_BENCHMARK=1 BUILD_TPCH=1 BUILD_TPCDS=1 BUILD_HTTPFS=1 CORE_EXTENSIONS='tpch' make -j$(nproc)
 build/release/benchmark/benchmark_runner "benchmark/imdb/.*.benchmark" --threads=8
 ```
 
 ### Appian Benchmark
 ```bash
-BUILD_BENCHMARK=1 BUILD_TPCH=1 BUILD_TPCDS=1 BUILD_HTTPFS=1 CORE_EXTENSIONS='tpch' make
+BUILD_BENCHMARK=1 BUILD_TPCH=1 BUILD_TPCDS=1 BUILD_HTTPFS=1 CORE_EXTENSIONS='tpch' make -j$(nproc)
 build/release/benchmark/benchmark_runner "benchmark/appian_benchmarks/.*.benchmark" --threads=8
 ```
 
@@ -62,7 +92,7 @@ To run the SQLStorm benchmark:
 To build a duckdb executable for SQLStorm,
 
 ```bash
-BUILD_BENCHMARK=1 BUILD_TPCH=1 BUILD_TPCDS=1 BUILD_HTTPFS=1 CXXFLAGS="-DUSE_LOCK_BF=1 -DUSE_SQLSTORM_DP_CONDITION=1" make -j
+BUILD_BENCHMARK=1 BUILD_TPCH=1 BUILD_TPCDS=1 BUILD_HTTPFS=1 CXXFLAGS="-DUSE_LOCK_BF=1 -DUSE_SQLSTORM_DP_CONDITION=1" make -j$(nproc)
 ```
 
 The executable of duckdb is placed at `./build/release/duckdb`.
