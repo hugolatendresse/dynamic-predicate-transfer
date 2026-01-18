@@ -31,7 +31,7 @@ CREATE TABLE C AS SELECT i AS id1, i AS id2 FROM range(1, 5000001) AS t(i);
 EXPLAIN ANALYZE        -- Show query execution plan
 SELECT count(*)
 FROM A JOIN B ON A.id1 = B.id1 JOIN C ON B.id1 = C.id1
-WHERE A.id2 % 5 = 0    -- Filter on A
+WHERE A.id2 % 2 = 0    -- Filter on A
   AND B.id2 % 7 = 0    -- Filter on B
   AND C.id2 % 13 = 0;  -- Filter on C
 ```
