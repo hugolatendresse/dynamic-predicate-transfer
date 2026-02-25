@@ -3,11 +3,11 @@
 -- Does not use perfect hashing
 
 
-https://duckdb.org/docs/stable/dev/profiling
+-- https://duckdb.org/docs/stable/dev/profiling
 PRAGMA enable_profiling = 'json';
 PRAGMA profiling_output = 'scripts/measure/1_cold_interleaved.json';
 PRAGMA profiling_coverage = 'SELECT';
-PRAGMA profiling_mode = 'detailed';
+-- PRAGMA profiling_mode = 'detailed';
 
 
 -- https://duckdb.org/docs/stable/configuration/overview#:~:text=max_temp_directory_size

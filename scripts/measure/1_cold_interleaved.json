@@ -1,51 +1,100 @@
-{
-    "rows_returned": 0,
-    "latency": 0.006721991,
-    "result_set_size": 0,
-    "query_name": "ANALYZE b;",
-    "blocked_thread_time": 0.0,
-    "system_peak_buffer_memory": 8630413312,
-    "system_peak_temp_dir_size": 0,
-    "cpu_time": 0.023318028000000005,
-    "extra_info": {},
-    "cumulative_cardinality": 800001,
-    "cumulative_rows_scanned": 3200004,
-    "children": [
-        {
-            "result_set_size": 0,
-            "operator_name": "VACUUM",
-            "cpu_time": 0.023318028000000005,
-            "extra_info": {},
-            "cumulative_cardinality": 800001,
-            "operator_type": "VACUUM",
-            "operator_cardinality": 0,
-            "cumulative_rows_scanned": 3200004,
-            "operator_rows_scanned": 0,
-            "operator_timing": 0.022925364000000004,
-            "children": [
-                {
-                    "result_set_size": 13600017,
-                    "operator_name": "SEQ_SCAN ",
-                    "cpu_time": 0.00039266400000000003,
-                    "extra_info": {
-                        "Table": "b",
-                        "Type": "Sequential Scan",
-                        "Projections": [
-                            "keyB1",
-                            "valueB1",
-                            "hot"
-                        ],
-                        "Estimated Cardinality": "800001"
-                    },
-                    "cumulative_cardinality": 800001,
-                    "operator_type": "TABLE_SCAN",
-                    "operator_cardinality": 800001,
-                    "cumulative_rows_scanned": 3200004,
-                    "operator_rows_scanned": 3200004,
-                    "operator_timing": 0.00039266400000000003,
-                    "children": []
-                }
-            ]
-        }
-    ]
-}
+┌─────────────────────────────────────┐
+│┌───────────────────────────────────┐│
+││    Query Profiling Information    ││
+│└───────────────────────────────────┘│
+└─────────────────────────────────────┘
+SELECT min(b.valueB1)  FROM a  JOIN b ON a.keyB1 = b.keyB1;
+┌────────────────────────────────────────────────┐
+│┌──────────────────────────────────────────────┐│
+││               Total Time: 1.45s              ││
+│└──────────────────────────────────────────────┘│
+└────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────┐
+│               Optimizer: 0.0001s               │
+│┌──────────────────────────────────────────────┐│
+││        Build Side Probe Side: 0.0000s        ││
+││           Column Lifetime: 0.0000s           ││
+││           Common Aggregate: 0.0000s          ││
+││        Common Subexpressions: 0.0000s        ││
+││      Compressed Materialization: 0.0000s     ││
+││          Cte Filter Pusher: 0.0000s          ││
+││             Deliminator: 0.0000s             ││
+││           Duplicate Groups: 0.0000s          ││
+││         Empty Result Pullup: 0.0000s         ││
+││         Expression Rewriter: 0.0000s         ││
+││              Extension: 0.0000s              ││
+││            Filter Pullup: 0.0000s            ││
+││           Filter Pushdown: 0.0000s           ││
+││              In Clause: 0.0000s              ││
+││         Join Filter Pushdown: 0.0000s        ││
+││              Join Order: 0.0000s             ││
+││         Late Materialization: 0.0000s        ││
+││            Limit Pushdown: 0.0000s           ││
+││           Materialized Cte: 0.0000s          ││
+││             Regex Range: 0.0000s             ││
+││            Reorder Filter: 0.0000s           ││
+││          Sampling Pushdown: 0.0000s          ││
+││        Statistics Propagation: 0.0000s       ││
+││             Sum Rewriter: 0.0000s            ││
+││                Top N: 0.0000s                ││
+││           Unnest Rewriter: 0.0000s           ││
+││            Unused Columns: 0.0000s           ││
+│└──────────────────────────────────────────────┘│
+└────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────┐
+│            Physical planner: 0.0000s           │
+│┌──────────────────────────────────────────────┐│
+││            Column Binding: 0.0000s           ││
+││             Create Plan: 0.0000s             ││
+││            Resolve Types: 0.0000s            ││
+│└──────────────────────────────────────────────┘│
+└────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────┐
+│                Planner: 0.0001s                │
+│┌──────────────────────────────────────────────┐│
+││               Binding: 0.0001s               ││
+│└──────────────────────────────────────────────┘│
+└────────────────────────────────────────────────┘
+┌───────────────────────────┐
+│           QUERY           │
+└─────────────┬─────────────┘
+┌─────────────┴─────────────┐
+│    UNGROUPED_AGGREGATE    │
+│    ────────────────────   │
+│    Aggregates: min(#0)    │
+│                           │
+│           1 Rows          │
+│          (0.20s)          │
+└─────────────┬─────────────┘
+┌─────────────┴─────────────┐
+│         PROJECTION        │
+│    ────────────────────   │
+│          valueB1          │
+│                           │
+│       400000001 Rows      │
+│          (0.01s)          │
+└─────────────┬─────────────┘
+┌─────────────┴─────────────┐
+│         HASH_JOIN         │
+│    ────────────────────   │
+│      Join Type: INNER     │
+│                           │
+│        Conditions:        ├──────────────┐
+│       keyB1 = keyB1       │              │
+│                           │              │
+│       400000001 Rows      │              │
+│          (5.31s)          │              │
+└─────────────┬─────────────┘              │
+┌─────────────┴─────────────┐┌─────────────┴─────────────┐
+│         TABLE_SCAN        ││         TABLE_SCAN        │
+│    ────────────────────   ││    ────────────────────   │
+│          Table: a         ││          Table: b         │
+│   Type: Sequential Scan   ││   Type: Sequential Scan   │
+│     Projections: keyB1    ││                           │
+│                           ││        Projections:       │
+│                           ││           keyB1           │
+│                           ││          valueB1          │
+│                           ││                           │
+│       400000001 Rows      ││        800001 Rows        │
+│          (0.14s)          ││          (0.00s)          │
+└───────────────────────────┘└───────────────────────────┘

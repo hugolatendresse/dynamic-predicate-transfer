@@ -6,15 +6,15 @@ RESULTS="$SCRIPT_DIR/results.txt"
 : > "$RESULTS"
 
 SQL_FILES=(
-  100_cold_segmented
+  0_cold
+  1_cold_interleaved
+  1_cold_segmented
+  5_cold_interleaved
+  5_cold_segmented
+  10_cold_interleaved
+  10_cold_segmented
   100_cold_interleaved
-  # 0_cold
-  # 1_cold_interleaved
-  # 1_cold_segmented
-  # 5_cold_interleaved
-  # 5_cold_segmented
-  # 10_cold_interleaved
-  # 10_cold_segmented
+  100_cold_segmented
 )
 
 for base in "${SQL_FILES[@]}"; do
