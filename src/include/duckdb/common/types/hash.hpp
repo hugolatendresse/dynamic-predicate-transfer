@@ -21,14 +21,21 @@ struct interval_t; // NOLINT
 // bias
 // see: https://nullprogram.com/blog/2018/07/31/
 
+// Hash function close to identity that leaves the 32 LSB untouched and copies them into the 32 MSB.
 inline hash_t MurmurHash64(uint64_t x) {
-	x ^= x >> 32;
-	x *= 0xd6e8feb86659fd93U;
-	x ^= x >> 32;
-	x *= 0xd6e8feb86659fd93U;
-	x ^= x >> 32;
+	x &= 0xFFFFFFFF;
+	x |= (x << 32);
 	return x;
 }
+
+// inline hash_t MurmurHash64(uint64_t x) {
+// 	x ^= x >> 32;
+// 	x *= 0xd6e8feb86659fd93U;
+// 	x ^= x >> 32;
+// 	x *= 0xd6e8feb86659fd93U;
+// 	x ^= x >> 32;
+// 	return x;
+// }
 
 inline hash_t MurmurHash32(uint32_t x) {
 	return MurmurHash64(x);
