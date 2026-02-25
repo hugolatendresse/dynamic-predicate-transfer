@@ -1,0 +1,51 @@
+{
+    "rows_returned": 0,
+    "latency": 0.006721991,
+    "result_set_size": 0,
+    "query_name": "ANALYZE b;",
+    "blocked_thread_time": 0.0,
+    "system_peak_buffer_memory": 8630413312,
+    "system_peak_temp_dir_size": 0,
+    "cpu_time": 0.023318028000000005,
+    "extra_info": {},
+    "cumulative_cardinality": 800001,
+    "cumulative_rows_scanned": 3200004,
+    "children": [
+        {
+            "result_set_size": 0,
+            "operator_name": "VACUUM",
+            "cpu_time": 0.023318028000000005,
+            "extra_info": {},
+            "cumulative_cardinality": 800001,
+            "operator_type": "VACUUM",
+            "operator_cardinality": 0,
+            "cumulative_rows_scanned": 3200004,
+            "operator_rows_scanned": 0,
+            "operator_timing": 0.022925364000000004,
+            "children": [
+                {
+                    "result_set_size": 13600017,
+                    "operator_name": "SEQ_SCAN ",
+                    "cpu_time": 0.00039266400000000003,
+                    "extra_info": {
+                        "Table": "b",
+                        "Type": "Sequential Scan",
+                        "Projections": [
+                            "keyB1",
+                            "valueB1",
+                            "hot"
+                        ],
+                        "Estimated Cardinality": "800001"
+                    },
+                    "cumulative_cardinality": 800001,
+                    "operator_type": "TABLE_SCAN",
+                    "operator_cardinality": 800001,
+                    "cumulative_rows_scanned": 3200004,
+                    "operator_rows_scanned": 3200004,
+                    "operator_timing": 0.00039266400000000003,
+                    "children": []
+                }
+            ]
+        }
+    ]
+}
